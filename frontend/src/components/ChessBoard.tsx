@@ -7,6 +7,7 @@ export default function ChessBoard({
   setBoard,
   chess,
   socket,
+  pieceColor,
 }: {
   board: ({
     square: Square;
@@ -20,68 +21,107 @@ export default function ChessBoard({
   >;
   chess: Chess;
   socket: WebSocket;
+  pieceColor: string | undefined;
 }) {
   const from = useRef<string>(undefined);
 
   return (
     <div className="h-screen flex flex-col items-center justify-center">
-      {board.map((row, i) => {
-        return (
-          <div key={i} className="flex">
-            {row.map((square, j) => {
-              const squareRepresentation =
-                String.fromCharCode(97 + (j % 8)) + "" + `${8 - i}`;
+      <div className="w-full max-w-screen-sm aspect-square">
+        {board.map((row, i) => {
+          return (
+            <div key={i} className="flex">
+              {row.map((square, j) => {
+                const squareRepresentation =
+                  String.fromCharCode(97 + (j % 8)) + "" + `${8 - i}`;
 
-              return (
-                <div
-                  key={j}
-                  onClick={() => {
-                    // alert(squareRepresentation);
-                    // alert(square?.square);
-                    if (!from.current) {
-                      from.current = squareRepresentation;
-                    } else {
-                      try {
-                        chess.move({
-                          from: from.current,
-                          to: squareRepresentation,
-                        });
-                      } catch (err) {
-                        alert(err);
+                return (
+                  <div
+                    key={j}
+                    onClick={() => {
+                      // alert(squareRepresentation);
+                      // alert(square?.square);
+
+                      if (!pieceColor) {
                         return;
                       }
 
-                      setBoard(chess.board());
+                      if (
+                        (square?.square &&
+                          !from.current &&
+                          pieceColor != square?.color) ||
+                        (!from.current && !square?.square)
+                      ) {
+                        return;
+                      }
 
-                      socket.send(
-                        JSON.stringify({
-                          type: MAKE_MOVE,
-                          payload: {
-                            move: {
-                              from: from.current,
-                              to: squareRepresentation,
+                      if (from.current && square?.square) {
+                        if (pieceColor && pieceColor == square.color) {
+                          from.current = squareRepresentation;
+                          return;
+                        }
+                      }
+
+                      if (!from.current) {
+                        from.current = squareRepresentation;
+                      } else {
+                        try {
+                          chess.move({
+                            from: from.current,
+                            to: squareRepresentation,
+                          });
+                        } catch (err) {
+                          alert(err);
+                          from.current = undefined;
+                          return;
+                        }
+
+                        setBoard(chess.board());
+
+                        socket.send(
+                          JSON.stringify({
+                            type: MAKE_MOVE,
+                            payload: {
+                              move: {
+                                from: from.current,
+                                to: squareRepresentation,
+                              },
                             },
-                          },
-                        })
-                      );
+                          })
+                        );
 
-                      from.current = undefined;
-                    }
-                    // if(from.current)
-                  }}
-                  className={`w-28 h-28 ${
-                    (i + j) % 2 == 0 ? "bg-secondary-color" : "bg-primary-color"
-                  } `}
-                >
-                  {/* {JSON.stringify({ i, j })}
-                   */}
-                  {square?.type}
-                </div>
-              );
-            })}
-          </div>
-        );
-      })}
+                        from.current = undefined;
+                      }
+                      // if(from.current)
+                    }}
+                    className={`flex-1 aspect-square ${
+                      (i + j) % 2 == 0
+                        ? "bg-secondary-color"
+                        : "bg-primary-color"
+                    } `}
+                  >
+                    {/* {JSON.stringify({ i, j })}
+                     */}
+                    {/* {square?.type} */}
+                    <div className="h-full justify-center flex flex-col items-center ">
+                      {square ? (
+                        <img
+                          //   className="w-[4.25rem]"
+                          src={`/${
+                            square.color == "b"
+                              ? `b${square.type}`
+                              : `w${square.type}`
+                          }.png`}
+                        />
+                      ) : null}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

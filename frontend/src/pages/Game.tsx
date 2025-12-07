@@ -8,6 +8,7 @@ export default function Game() {
   const { socket } = useSocket();
   const [chess, setChess] = useState<Chess>(new Chess());
   const [board, setBoard] = useState(chess.board());
+  const [pieceColor, setPieceColor] = useState<string>();
 
   useEffect(() => {
     if (socket == null) {
@@ -19,6 +20,8 @@ export default function Game() {
 
       switch (message.type) {
         case INIT_GAME:
+          const color = message.payload.color;
+          setPieceColor(color == "white" ? "w" : "b");
           break;
         case MAKE_MOVE:
           const move = message.payload.move;
@@ -44,10 +47,11 @@ export default function Game() {
           chess={chess}
           socket={socket}
           board={board}
+          pieceColor={pieceColor}
         />
       </div>
 
-      <div className="col-span-3 w-full py-10 px-20">
+      <div className="col-span-3 w-full py-10 px-20 flex-col flex justify-between">
         <button
           onClick={() => {
             socket.send(
@@ -56,7 +60,7 @@ export default function Game() {
               })
             );
           }}
-          className="py-6 w-full inline-block bg-primary-color text-3xl text-white rounded-2xl hover:bg-green-950 cursor-pointer"
+          className="py-6 w-full inline-block bg-primary-color text-3xl text-white rounded-2xl hover:bg-primary-color/50 cursor-pointer"
         >
           Play
         </button>
